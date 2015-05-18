@@ -1,0 +1,35 @@
+--- old/Makefile	2014-08-14 18:04:25.650442971 +0200
++++ new/Makefile	2014-08-14 18:07:08.851538963 +0200
+@@ -115,23 +115,23 @@
+ 
+ blocksort.o: blocksort.c
+ 	@cat words0
+-	$(CC) $(CFLAGS) -c blocksort.c
++	$(CC) $(CFLAGS) -c blocksort.c     -o blocksort.o
+ huffman.o: huffman.c
+-	$(CC) $(CFLAGS) -c huffman.c
++	$(CC) $(CFLAGS) -c huffman.c       -o huffman.o
+ crctable.o: crctable.c
+-	$(CC) $(CFLAGS) -c crctable.c
++	$(CC) $(CFLAGS) -c crctable.c      -o crctable.o
+ randtable.o: randtable.c
+-	$(CC) $(CFLAGS) -c randtable.c
++	$(CC) $(CFLAGS) -c randtable.c     -o randtable.o
+ compress.o: compress.c
+-	$(CC) $(CFLAGS) -c compress.c
++	$(CC) $(CFLAGS) -c compress.c      -o compress.o
+ decompress.o: decompress.c
+-	$(CC) $(CFLAGS) -c decompress.c
++	$(CC) $(CFLAGS) -c decompress.c    -o decompress.o
+ bzlib.o: bzlib.c
+-	$(CC) $(CFLAGS) -c bzlib.c
++	$(CC) $(CFLAGS) -c bzlib.c         -o bzlib.o
+ bzip2.o: bzip2.c
+-	$(CC) $(CFLAGS) -c bzip2.c
++	$(CC) $(CFLAGS) -c bzip2.c         -o bzip2.o
+ bzip2recover.o: bzip2recover.c
+-	$(CC) $(CFLAGS) -c bzip2recover.c
++	$(CC) $(CFLAGS) -c bzip2recover.c  -o bzip2recover.o
+ 
+ 
+ distclean: clean
