@@ -1,0 +1,299 @@
+diff --git a/crypto/mem.c b/crypto/mem.c
+index f7984fa..5c6591e 100644
+--- a/crypto/mem.c
++++ b/crypto/mem.c
+@@ -62,8 +62,8 @@
+ #include "cryptlib.h"
+ 
+ 
+-static int allow_customize = 1;      /* we provide flexible functions for */
+-static int allow_customize_debug = 1;/* exchanging memory-related functions at
++static int allow_customize = 0;      /* we provide flexible functions for */
++static int allow_customize_debug = 0;/* exchanging memory-related functions at
+                                       * run-time, but this must be done
+                                       * before any blocks are actually
+                                       * allocated; or we'll run into huge
+@@ -74,6 +74,7 @@ static int allow_customize_debug = 1;/* exchanging memory-related functions at
+ 
+ /* the following pointers may be changed as long as 'allow_customize' is set */
+ 
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ static void *(*malloc_func)(size_t)         = malloc;
+ static void *default_malloc_ex(size_t num, const char *file, int line)
+ 	{ return malloc_func(num); }
+@@ -97,6 +98,15 @@ static void *(*malloc_locked_ex_func)(size_t, const char *file, int line)
+ 
+ static void (*free_locked_func)(void *)     = free;
+ 
++#else
++
++#define malloc_ex_func(size, file, line) malloc(size)
++#define realloc_ex_func(ptr, size, file, line) realloc(ptr, size)
++#define free_func(size) free(size)
++#define malloc_locked_ex_func(size, file, line) malloc(size)
++#define free_locked_func(size) free(size)
++
++#endif
+ 
+ 
+ /* may be changed as long as 'allow_customize_debug' is set */
+@@ -126,6 +136,7 @@ int CRYPTO_set_mem_functions(void *(*m)(size_t), void *(*r)(void *, size_t),
+ 	{
+ 	/* Dummy call just to ensure OPENSSL_init() gets linked in */
+ 	OPENSSL_init();
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (!allow_customize)
+ 		return 0;
+ 	if ((m == 0) || (r == 0) || (f == 0))
+@@ -136,6 +147,9 @@ int CRYPTO_set_mem_functions(void *(*m)(size_t), void *(*r)(void *, size_t),
+ 	malloc_locked_func=m; malloc_locked_ex_func=default_malloc_locked_ex;
+ 	free_locked_func=f;
+ 	return 1;
++#else
++        return 0;
++#endif
+ 	}
+ 
+ int CRYPTO_set_mem_ex_functions(
+@@ -143,6 +157,7 @@ int CRYPTO_set_mem_ex_functions(
+         void *(*r)(void *, size_t,const char *,int),
+ 	void (*f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (!allow_customize)
+ 		return 0;
+ 	if ((m == 0) || (r == 0) || (f == 0))
+@@ -153,10 +168,14 @@ int CRYPTO_set_mem_ex_functions(
+ 	malloc_locked_func=0; malloc_locked_ex_func=m;
+ 	free_locked_func=f;
+ 	return 1;
++#else
++        return 0;
++#endif
+ 	}
+ 
+ int CRYPTO_set_locked_mem_functions(void *(*m)(size_t), void (*f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (!allow_customize)
+ 		return 0;
+ 	if ((m == NULL) || (f == NULL))
+@@ -164,12 +183,16 @@ int CRYPTO_set_locked_mem_functions(void *(*m)(size_t), void (*f)(void *))
+ 	malloc_locked_func=m; malloc_locked_ex_func=default_malloc_locked_ex;
+ 	free_locked_func=f;
+ 	return 1;
++#else
++        return 0;
++#endif
+ 	}
+ 
+ int CRYPTO_set_locked_mem_ex_functions(
+         void *(*m)(size_t,const char *,int),
+         void (*f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (!allow_customize)
+ 		return 0;
+ 	if ((m == NULL) || (f == NULL))
+@@ -177,6 +200,9 @@ int CRYPTO_set_locked_mem_ex_functions(
+ 	malloc_locked_func=0; malloc_locked_ex_func=m;
+ 	free_func=f;
+ 	return 1;
++#else
++        return 0;
++#endif
+ 	}
+ 
+ int CRYPTO_set_mem_debug_functions(void (*m)(void *,int,const char *,int,int),
+@@ -199,11 +225,17 @@ int CRYPTO_set_mem_debug_functions(void (*m)(void *,int,const char *,int,int),
+ void CRYPTO_get_mem_functions(void *(**m)(size_t), void *(**r)(void *, size_t),
+ 	void (**f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (m != NULL) *m = (malloc_ex_func == default_malloc_ex) ? 
+ 	                     malloc_func : 0;
+ 	if (r != NULL) *r = (realloc_ex_func == default_realloc_ex) ? 
+ 	                     realloc_func : 0;
+ 	if (f != NULL) *f=free_func;
++#else
++	if (m != NULL) *m = 0;
++	if (r != NULL) *r = 0;
++	if (f != NULL) *f = 0;
++#endif
+ 	}
+ 
+ void CRYPTO_get_mem_ex_functions(
+@@ -211,27 +243,43 @@ void CRYPTO_get_mem_ex_functions(
+         void *(**r)(void *, size_t,const char *,int),
+ 	void (**f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (m != NULL) *m = (malloc_ex_func != default_malloc_ex) ?
+ 	                    malloc_ex_func : 0;
+ 	if (r != NULL) *r = (realloc_ex_func != default_realloc_ex) ?
+ 	                    realloc_ex_func : 0;
+ 	if (f != NULL) *f=free_func;
++#else
++	if (m != NULL) *m = 0;
++	if (r != NULL) *r = 0;
++	if (f != NULL) *f = 0;
++#endif
+ 	}
+ 
+ void CRYPTO_get_locked_mem_functions(void *(**m)(size_t), void (**f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (m != NULL) *m = (malloc_locked_ex_func == default_malloc_locked_ex) ? 
+ 	                     malloc_locked_func : 0;
+ 	if (f != NULL) *f=free_locked_func;
++#else
++	if (m != NULL) *m = 0;
++	if (f != NULL) *f = 0;
++#endif
+ 	}
+ 
+ void CRYPTO_get_locked_mem_ex_functions(
+         void *(**m)(size_t,const char *,int),
+         void (**f)(void *))
+ 	{
++#ifdef CAN_OVERRIDE_MEMORY_FUNCTIONS
+ 	if (m != NULL) *m = (malloc_locked_ex_func != default_malloc_locked_ex) ?
+ 	                    malloc_locked_ex_func : 0;
+ 	if (f != NULL) *f=free_locked_func;
++#else
++	if (m != NULL) *m = 0;
++	if (f != NULL) *f = 0;
++#endif
+ 	}
+ 
+ void CRYPTO_get_mem_debug_functions(void (**m)(void *,int,const char *,int,int),
+diff --git a/doc/ssl/SSL_CONF_cmd.pod b/doc/ssl/SSL_CONF_cmd.pod
+index bbda10a..552d4a8 100644
+--- a/doc/ssl/SSL_CONF_cmd.pod
++++ b/doc/ssl/SSL_CONF_cmd.pod
+@@ -332,6 +332,8 @@ The value is a file name.
+ 
+ The value is a directory name.
+ 
++=back
++
+ =head1 NOTES
+ 
+ The order of operations is significant. This can be used to set either defaults
+diff --git a/ssl/d1_both.c b/ssl/d1_both.c
+index d8bcd58..f0c5962 100644
+--- a/ssl/d1_both.c
++++ b/ssl/d1_both.c
+@@ -1330,36 +1330,26 @@ dtls1_process_heartbeat(SSL *s)
+ 	unsigned int payload;
+ 	unsigned int padding = 16; /* Use minimum padding */
+ 
+-	if (s->msg_callback)
+-		s->msg_callback(0, s->version, TLS1_RT_HEARTBEAT,
+-			&s->s3->rrec.data[0], s->s3->rrec.length,
+-			s, s->msg_callback_arg);
+-
+ 	/* Read type and payload length first */
+-	if (1 + 2 + 16 > s->s3->rrec.length)
+-		return 0; /* silently discard */
+ 	hbtype = *p++;
+ 	n2s(p, payload);
+-	if (1 + 2 + payload + 16 > s->s3->rrec.length)
+-		return 0; /* silently discard per RFC 6520 sec. 4 */
+ 	pl = p;
+ 
++	if (s->msg_callback)
++		s->msg_callback(0, s->version, TLS1_RT_HEARTBEAT,
++			&s->s3->rrec.data[0], s->s3->rrec.length,
++			s, s->msg_callback_arg);
++
+ 	if (hbtype == TLS1_HB_REQUEST)
+ 		{
+ 		unsigned char *buffer, *bp;
+-		unsigned int write_length = 1 /* heartbeat type */ +
+-					    2 /* heartbeat length */ +
+-					    payload + padding;
+ 		int r;
+ 
+-		if (write_length > SSL3_RT_MAX_PLAIN_LENGTH)
+-			return 0;
+-
+ 		/* Allocate memory for the response, size is 1 byte
+ 		 * message type, plus 2 bytes payload length, plus
+ 		 * payload, plus padding
+ 		 */
+-		buffer = OPENSSL_malloc(write_length);
++		buffer = OPENSSL_malloc(1 + 2 + payload + padding);
+ 		bp = buffer;
+ 
+ 		/* Enter response type, length and copy payload */
+@@ -1370,11 +1360,11 @@ dtls1_process_heartbeat(SSL *s)
+ 		/* Random padding */
+ 		RAND_pseudo_bytes(bp, padding);
+ 
+-		r = dtls1_write_bytes(s, TLS1_RT_HEARTBEAT, buffer, write_length);
++		r = dtls1_write_bytes(s, TLS1_RT_HEARTBEAT, buffer, 3 + payload + padding);
+ 
+ 		if (r >= 0 && s->msg_callback)
+ 			s->msg_callback(1, s->version, TLS1_RT_HEARTBEAT,
+-				buffer, write_length,
++				buffer, 3 + payload + padding,
+ 				s, s->msg_callback_arg);
+ 
+ 		OPENSSL_free(buffer);
+diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
+index bcb99b8..0629855 100644
+--- a/ssl/t1_lib.c
++++ b/ssl/t1_lib.c
+@@ -3969,24 +3969,21 @@ tls1_process_heartbeat(SSL *s)
+ 	unsigned int payload;
+ 	unsigned int padding = 16; /* Use minimum padding */
+ 
+-	if (s->msg_callback)
+-		s->msg_callback(0, s->version, TLS1_RT_HEARTBEAT,
+-			&s->s3->rrec.data[0], s->s3->rrec.length,
+-			s, s->msg_callback_arg);
+-
+ 	/* Read type and payload length first */
+-	if (1 + 2 + 16 > s->s3->rrec.length)
+-		return 0; /* silently discard */
+ 	hbtype = *p++;
+ 	n2s(p, payload);
+-	if (1 + 2 + payload + 16 > s->s3->rrec.length)
+-		return 0; /* silently discard per RFC 6520 sec. 4 */
+ 	pl = p;
+ 
++	if (s->msg_callback)
++		s->msg_callback(0, s->version, TLS1_RT_HEARTBEAT,
++			&s->s3->rrec.data[0], s->s3->rrec.length,
++			s, s->msg_callback_arg);
++
+ 	if (hbtype == TLS1_HB_REQUEST)
+ 		{
+ 		unsigned char *buffer, *bp;
+ 		int r;
++                unsigned int payload_iter;
+ 
+ 		/* Allocate memory for the response, size is 1 bytes
+ 		 * message type, plus 2 bytes payload length, plus
+@@ -3998,7 +3995,19 @@ tls1_process_heartbeat(SSL *s)
+ 		/* Enter response type, length and copy payload */
+ 		*bp++ = TLS1_HB_RESPONSE;
+ 		s2n(payload, bp);
+-		memcpy(bp, pl, payload);
++
++                // ASAP Experiments
++                // Replace memcpy by a manual loop, so that ASan will instrument it
++		//memcpy(bp, pl, payload);
++                payload_iter = 0;
++                while (payload_iter < payload) {
++                    *(bp + payload_iter) = *(pl + payload_iter);
++                    if (payload_iter % 1024 == 1023) {
++                        fprintf(stderr, "copied 1kb of payload\n");
++                    }
++                    ++payload_iter;
++                }
++
+ 		bp += payload;
+ 		/* Random padding */
+ 		RAND_pseudo_bytes(bp, padding);

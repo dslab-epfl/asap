@@ -352,6 +352,10 @@ namespace {
       return FuncChecksum;
     }
 
+    uint32_t getIdent() {
+      return Ident;
+    }
+
     void setCfgChecksum(uint32_t Checksum) {
       CfgChecksum = Checksum;
     }
@@ -857,8 +861,9 @@ Function *GCOVProfiler::insertCounterWriteout(
       for (unsigned j = 0, e = CountersBySP.size(); j != e; ++j) {
         DISubprogram SP(CountersBySP[j].second);
         uint32_t FuncChecksum = Funcs.empty() ? 0 : Funcs[j]->getFuncChecksum();
+        uint32_t FuncIdent    = Funcs.empty() ? j : Funcs[j]->getIdent();
         Builder.CreateCall5(
-            EmitFunction, Builder.getInt32(j),
+            EmitFunction, Builder.getInt32(FuncIdent),
             Options.FunctionNamesInData ?
               Builder.CreateGlobalStringPtr(getFunctionName(SP)) :
               Constant::getNullValue(Builder.getInt8PtrTy()),

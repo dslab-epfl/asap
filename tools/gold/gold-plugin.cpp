@@ -76,10 +76,8 @@ static StringSet<> CannotBeHidden;
 static llvm::TargetOptions TargetOpts;
 
 namespace options {
-  enum generate_bc { BC_NO, BC_ALSO, BC_ONLY };
   static bool generate_api_file = false;
-  static generate_bc generate_bc_file = BC_NO;
-  static std::string bc_path;
+  static bool save_temps = false;
   static std::string obj_path;
   static std::string extra_library_path;
   static std::string triple;
@@ -107,19 +105,8 @@ namespace options {
       triple = opt.substr(strlen("mtriple="));
     } else if (opt.startswith("obj-path=")) {
       obj_path = opt.substr(strlen("obj-path="));
-    } else if (opt == "emit-llvm") {
-      generate_bc_file = BC_ONLY;
-    } else if (opt == "also-emit-llvm") {
-      generate_bc_file = BC_ALSO;
-    } else if (opt.startswith("also-emit-llvm=")) {
-      llvm::StringRef path = opt.substr(strlen("also-emit-llvm="));
-      generate_bc_file = BC_ALSO;
-      if (!bc_path.empty()) {
-        (*message)(LDPL_WARNING, "Path to the output IL file specified twice. "
-                   "Discarding %s", opt_);
-      } else {
-        bc_path = path;
-      }
+    } else if (opt == "save-temps") {
+      save_temps = true;
     } else {
       // Save this option to pass to the code generator.
       extra.push_back(opt);
@@ -442,20 +429,11 @@ static ld_plugin_status all_symbols_read_hook(void) {
   if (!options::mcpu.empty())
     CodeGen->setCpu(options::mcpu.c_str());
 
-  if (options::generate_bc_file != options::BC_NO) {
-    std::string path;
-    if (options::generate_bc_file == options::BC_ONLY)
-      path = output_name;
-    else if (!options::bc_path.empty())
-      path = options::bc_path;
-    else
-      path = output_name + ".bc";
+  if (options::save_temps) {
+    std::string path = output_name + ".lto.bc";
     std::string Error;
-    if (!CodeGen->writeMergedModules(path.c_str(), Error))
-      (*message)(LDPL_FATAL, "Failed to write the output file.");
-    if (options::generate_bc_file == options::BC_ONLY) {
-      delete CodeGen;
-      exit(0);
+    if (!CodeGen->writeMergedModules(path.c_str(), Error)) {
+      (*message)(LDPL_FATAL, "Failed to write the .lto.bc file.");
     }
   }
 
@@ -467,6 +445,14 @@ static ld_plugin_status all_symbols_read_hook(void) {
                                   false, /*DisableGVNLoadPRE*/ false, Error))
       (*message)(LDPL_ERROR, "Could not produce a combined object file\n");
     ObjPath = Temp;
+  }
+
+  if (options::save_temps) {
+    std::string path = output_name + ".lto.opt.bc";
+    std::string Error;
+    if (!CodeGen->writeMergedModules(path.c_str(), Error)) {
+      (*message)(LDPL_FATAL, "Failed to write the .lto.opt.bc file.");
+    }
   }
 
   delete CodeGen;

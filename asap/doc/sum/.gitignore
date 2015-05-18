@@ -1,0 +1,11 @@
+# ASAP state folder
+asap_state/
+
+# Compilation byproducts
+*.o
+
+# Makefile stamps
+stamps/
+
+# Compiled programs
+sum
