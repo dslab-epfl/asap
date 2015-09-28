@@ -34,10 +34,12 @@ fetch_bzip2() {
 build_bzip2() {
     local extra_cflags="$1"
     local ldflags="$2"
-    make CC="$(which asap-clang)" \
+    make clean
+    make -j "$N_PROCESSORS" \
+         CC="$(which asap-clang)" \
          CFLAGS="-Wall -Winline -O3 -g -D_FILE_OFFSET_BITS=64 $extra_cflags" \
          LDFLAGS="$ldflags" \
-         clean all
+         all
 }
 
 configure_and_build_bzip2() {
