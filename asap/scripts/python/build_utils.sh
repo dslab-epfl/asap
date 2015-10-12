@@ -15,8 +15,11 @@ fi
 
 export ASAN_OPTIONS="malloc_context_size=0:detect_leaks=0"
 
-# Find the number of processors of this system, for automatic parallel make
-export N_PROCESSORS="$( grep -E '^processor' /proc/cpuinfo | wc -l )"
+# Find the number of jobs to use in parallel make. Ninja kindly computes this
+# for us, although I doubt developers consider help texts part of the stable
+# public API ;-)
+export N_JOBS="$( ninja --help 2>&1 | grep "run N jobs in parallel" | \
+                  grep -o "default=[0-9]\+" | grep -o "[0-9]\+" )"
 
 # Updates a repository
 # Run this in a folder containing a checked-out repository. It will try to pull

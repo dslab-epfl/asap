@@ -41,12 +41,12 @@ build_python() {
     (
         cd build
         make clean
-        make -j "$N_PROCESSORS" all
+        make -j "$N_JOBS" all
     )
 }
 
 test_python() {
-    ./build/python -m test -j "$N_PROCESSORS" -x \
+    ./build/python -m test -j "$N_JOBS" -x \
         test_aifc test_asyncio test_audioop test_buffer test_cmd_line \
         test_codeccallbacks test_codecs test_ctypes test_datetime test_difflib \
         test_docxmlrpc test_exceptions test_faulthandler test_format test_hash \

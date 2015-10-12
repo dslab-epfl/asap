@@ -41,12 +41,12 @@ build_python() {
     (
         cd build
         make clean
-        make -j "$N_PROCESSORS" all
+        make -j "$N_JOBS" all
     )
 }
 
 test_python() {
-    ./build/python -m test.regrtest -j "$N_PROCESSORS" -x \
+    ./build/python -m test.regrtest -j "$N_JOBS" -x \
     test_exceptions test_json test_marshal test_runpy test_ctypes \
     test_descr test_io test_unicode \
         || true
