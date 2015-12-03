@@ -5,20 +5,23 @@ mkdir asap
 cd asap
 
 # Clone the source code
-git clone git@github.com:dslab-epfl/asap.git
+git clone https://github.com/dslab-epfl/asap.git
 git clone http://llvm.org/git/clang.git asap/tools/clang
-( cd asap/tools/clang && git checkout release_35 )
+( cd asap/tools/clang && git checkout release_37 )
 git clone http://llvm.org/git/compiler-rt.git asap/projects/compiler-rt
-( cd asap/projects/compiler-rt && git checkout release_35 )
+( cd asap/projects/compiler-rt && git checkout release_37 )
 
 # Let's build ASAP
 mkdir build
 cd build
 
-# For configuring, two settings are recommended
+# For configuring, these settings are recommended:
 # - -G Ninja finishes the build sooner (you want your build ASAP, after all :) )
 # - -DLLVM_ENABLE_ASSERTIONS=ON makes bugs a bit easier to understand
-cmake -G Ninja -DLLVM_ENABLE_ASSERTIONS=ON ../asap
+# - -DCMAKE_EXPORT_COMPILE_COMMANDS=ON causes a compile_commands.json
+#   file to be generated. This file is useful if you're editing the ASAP
+#   source code or running code analysis tools.
+cmake -G Ninja -DLLVM_ENABLE_ASSERTIONS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../asap
 
 cmake --build .
 
